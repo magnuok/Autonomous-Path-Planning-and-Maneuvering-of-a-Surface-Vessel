@@ -1,0 +1,185 @@
+<launch>
+
+
+<!-- HARDWARE -->
+
+<!-- Stern arduino node -->
+<node name="rosserial_server_mega" pkg="rosserial_python" type="serial_node.py">
+  <param name="~port" value="/dev/ttyACM0" />
+  <param name="~baud" value="57600" />
+</node>
+
+<!-- Bow arduino node -->
+<node name="rosserial_server_uno" pkg="rosserial_python" type="serial_node.py" respawn="true">
+  <param name="~port" value="/dev/ttyACM1" />
+    <param name="~baud" value="57600" />
+</node>
+
+<!-- IMU node -->
+<node name="xsensNode" pkg="xsens_driver" type="mtnode.py" respawn="true" output="screen" >
+  <param name="~baudrate" value="115200" />
+  <param name="~frame_id" value="/mti/data" />
+  <param name="~frame_local" value="NED" />
+  <param name="~frame_local_imu" value="NED" />
+  <param name="~send_nmea" value="true" />
+</node>
+
+<!-- GPS node -->
+<node name="vectorVS330" pkg="nmea_navsat_driver" type="nmea_serial_driver" respawn="true" >
+  <param name="~baudrate" value="115200" />
+  <param name="~frame_id" value="/hemisphere" />
+</node>
+
+<!-- Stepper driver node -->
+<node name="stepperNode" pkg="actuators" type="stepper.py" respawn="true"/>
+
+<!--node name="UDPVideoStream" pkg="udp_video_stream" type="UDPVideoStream" respawn="true" respawn_delay="2" output="screen"/
+-->
+
+<!-- NODES -->
+
+<!-- Remote control node -->
+<node name="RCremoteNode" pkg="rcremote" type="rcremote_node.py" respawn="true" />
+
+<!-- Supervisory Controller node -->
+<node name="CME" pkg="cme" type="cme_node" respawn="true" output="screen"/>
+
+<!-- Guidance system node -->
+<node name="GuidanceSystem" pkg="guidance_system" type="GuidanceSystem.py" respawn="true" output="screen" cwd="node" />
+
+<!-- Motion control system -->
+<node name="MotionControlSystem" pkg="motion_control_system" type="motion_control_system.py" respawn="true" output="screen" cwd="node" />
+
+<!-- Reference filter for DP controller -->
+<node name="refFilterNode" pkg="dp_controller" type="Reference_filter.py" respawn="true" />
+
+<!-- DP controller node -->
+<node name="DPcontrollerNode" pkg="dp_controller" type="DP_PID.py" respawn="true" />
+
+<!-- Thrust allocation node -->
+<node name="thrusterAllocationNode" pkg="dp_controller" type="Thruster_allocation.py" respawn="true" />
+
+<!-- Azure Node Connection-->
+<node name="AzureNode" pkg="azure_connection" type="azure_connection.py" />
+
+<!-- Observer node -->
+<node name="ObserverNode" pkg="observer" type="observer.py" respawn="true">
+<param name="lat0" value="63.4391751633" />
+<param name="lon0" value="10.4003291867" />
+<param name="alt0" value="-2.423" />
+</node>
+
+<!-- AIS decoder node
+<node name="AISdecoderNode" pkg="ais_decoder" type="ais_decoder.py" />
+-->
+<!-- TCP connection to RMC station
+<node name="TCPDatatransceiver" pkg="tcp_datatransceiver" type="TCPDatatransceiver" respawn="true" respawn_delay="2"/>
+-->
+
+<!-- UDP ais receiver 
+<node name="UDPais" pkg="udp_receiver" type="UDP_receiver"
+respawn="true" respawn_delay="2" output="screen"/>
+-->
+
+<!-- VELODYNE -->
+
+<arg name="half_pi" value="$(eval pi/2)"/>
+<arg name="pi" value="$(eval pi)"/>
+
+<!--Handmeasured translation from cam to body, assuming paralell coordinate-systems -->
+<node pkg="tf2_ros" type="static_transform_publisher" name="body_cam_broadcaster" args="1.31 0 -0.17 0 0 $(arg pi) body cameraframe"/>
+
+<node pkg="tf2_ros" type="static_transform_publisher" name="ladybugframe_cam0_broadcaster" args="0.060997 0.000523 -0.000248    2.154491 1.569960 2.154491 cameraframe cam0"/>
+
+<node pkg="tf2_ros" type="static_transform_publisher" name="realframecam0_precivedframe_broadcaster" args="0 0 0 -$(arg half_pi) 0 0 cam0 percieved_calibrated_cam0_frame"/>
+
+<!--Calibration-values from lidar/camera calibration--> 
+<node pkg="tf2_ros" type="static_transform_publisher" name="cam_lidar_broadcaster" args="0.0104695 -0.302541 -0.532367 1.30516 -1.51385 0.276407 percieved_calibrated_cam0_frame velodyne"/>
+
+
+  <!-- declare arguments with default values -->
+  <arg name="calibration" default="$(find velodyne_pointcloud)/params/VLP16db.yaml"/>
+  <arg name="device_ip" default="" />
+  <arg name="frame_id" default="velodyne" />
+  <arg name="manager" default="$(arg frame_id)_nodelet_manager" />
+  <arg name="max_range" default="130.0" />
+  <arg name="min_range" default="0.4" />
+  <arg name="pcap" default="" />
+  <arg name="port" default="2368" />
+  <arg name="read_fast" default="false" />
+  <arg name="read_once" default="false" />
+  <arg name="repeat_delay" default="0.0" />
+  <arg name="rpm" default="600.0" />
+  <arg name="gps_time" default="false" />
+  <arg name="cut_angle" default="-0.01" />
+  <arg name="timestamp_first_packet" default="false" />
+  <arg name="laserscan_ring" default="-1" />
+  <arg name="laserscan_resolution" default="0.007" />
+  <arg name="organize_cloud" default="false" />
+
+  <!-- start nodelet manager and driver nodelets -->
+  <include file="$(find velodyne_driver)/launch/nodelet_manager.launch">
+    <arg name="device_ip" value="$(arg device_ip)"/>
+    <arg name="frame_id" value="$(arg frame_id)"/>
+    <arg name="manager" value="$(arg manager)" />
+    <arg name="model" value="VLP16"/>
+    <arg name="pcap" value="$(arg pcap)"/>
+    <arg name="port" value="$(arg port)"/>
+    <arg name="read_fast" value="$(arg read_fast)"/>
+    <arg name="read_once" value="$(arg read_once)"/>
+    <arg name="repeat_delay" value="$(arg repeat_delay)"/>
+    <arg name="rpm" value="$(arg rpm)"/>
+    <arg name="gps_time" value="$(arg gps_time)"/>
+    <arg name="cut_angle" value="$(arg cut_angle)"/>
+    <arg name="timestamp_first_packet" value="$(arg timestamp_first_packet)"/>
+  </include>
+
+  <!-- start cloud nodelet -->
+  <include file="$(find velodyne_pointcloud)/launch/cloud_nodelet.launch">
+    <arg name="calibration" value="$(arg calibration)"/>
+    <arg name="manager" value="$(arg manager)" />
+    <arg name="max_range" value="$(arg max_range)"/>
+    <arg name="min_range" value="$(arg min_range)"/>
+    <arg name="organize_cloud" value="$(arg organize_cloud)"/>
+  </include>
+
+  <!-- start laserscan nodelet -->
+  <include file="$(find velodyne_pointcloud)/launch/laserscan_nodelet.launch">
+    <arg name="manager" value="$(arg manager)" />
+    <arg name="ring" value="$(arg laserscan_ring)"/>
+    <arg name="resolution" value="$(arg laserscan_resolution)"/>
+  </include>
+
+
+
+
+<!-- Must export rosmaster and run from own window-->
+<!--
+<node pkg="rviz" type="rviz" name="rviz" args="-d $(find launching)/cfg/rviz/main.rviz" output="screen"/>
+<node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
+-->
+
+<!-- TODO: REMEMBER when testing
+
+ssh revolt@192.168.1.100
+revolt
+
+- reset obser through rqt
+
+- REMEMBER to take down the bow thruster
+
+export ROS_MASTER_URI=http://192.168.1.100:11311
+rosrun rqt_reconfigure rqt_reconfigure
+
+
+export ROS_MASTER_URI=http://192.168.1.100:11311
+rosrun rviz rviz -d launching/cfg/rviz/main.rviz
+
+javac -Djava.ext.dirs=. ThrusterAllocation.java
+
+rosbag record -a
+
+
+-->
+
+</launch>

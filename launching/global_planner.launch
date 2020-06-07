@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+
+<launch>
+
+
+<arg name="room"                                default="full"      />
+<arg name="launch_rviz"                         default="true"      />
+<arg name="launch_rqt"	                        default="true"      />
+<arg name="launch_global_planner"               default="true"      />
+<arg name="launch_map_server"                   default="true"      />
+<arg name="launch_costmap"                   	  default="true"      />
+<arg name="launch_graph_generator"              default="true"      />
+<arg name="cfg"                                 default="default"   />
+<arg name="load_segments"                       default="false"     />
+<arg name="map_name"                            default=""          />
+
+<!-- map server -->
+<group if="$(arg launch_map_server)">
+  <node pkg="map_server" type="map_server" name="map_server" args="$(find launching)/cfg/maps/$(arg room)/map.yaml"/>
+</group>
+
+<!-- Costmap -->
+<group if="$(arg launch_costmap)">
+
+	<!-- transform -->
+	<node name="transform" pkg="transform" type="transform_node" respawn="true" output="screen"/>
+	<node pkg="tf" type="static_transform_publisher" name="tf1" args="0 0 0 0 0 0 /map /base_link 100" />
+	<!-- Publishes the voxel grid to rviz for display -->
+	<node pkg="costmap_2d" type="costmap_2d_markers" name="voxel_visualizer">
+	<remap from="voxel_grid" to="costmap/voxel_grid"/>
+	</node>
+	<!-- Run the costmap node -->
+	<node name="costmap_node" pkg="costmap_2d" type="costmap_2d_node" >
+	<!-- Load common costmap config yaml -->
+	<rosparam file="$(find launching)/cfg/costmap/costmap_config.yaml" command="load" ns="costmap" />
+	</node>
+
+</group>
+
+<!-- Voronoi graph generator -->
+<group if="$(arg launch_graph_generator)">
+  <group if="$(arg load_segments)">
+  <include file="$(find launching)/graph_generator.launch">
+    <arg name="cfg" value="$(arg room)" />
+    <arg name="custom_graph_path" value="$(find launching)/cfg/graph/$(arg room)/cache/$(arg map_name)" />
+  </include>
+  </group>
+  <group unless="$(arg load_segments)">
+  <include file="$(find launching)/graph_generator.launch">
+    <arg name="cfg" value="$(arg room)" />
+  </include>
+  </group>
+</group>
+
+
+<!-- start rviz -->
+<group if="$(arg launch_rviz)">
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find launching)/cfg/rviz/global_planner.rviz" output="screen"/>
+  <!-- <node pkg="rviz" type="rviz" name="rviz" args="-d $(find launching)/cfg/rviz/$(arg room).rviz" output="screen"/> -->
+</group>
+
+<!-- Global planner -->
+<node name="GlobalPlanner" pkg="global_planner" type="global_planner.py" respawn="true" output="screen" cwd="node" />
+
+<!-- Rqt config -->
+<group if="$(arg launch_rqt)">
+	<node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure" />
+</group>
+
+</launch>

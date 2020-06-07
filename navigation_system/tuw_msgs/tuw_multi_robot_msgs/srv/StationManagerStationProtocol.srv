@@ -1,0 +1,19 @@
+#################################################################
+## Protocol to Send and Receive Control Commands
+#################################################################
+
+string                          request         # request string
+tuw_multi_robot_msgs/Station    station         # station message
+
+# request constants
+string APPEND = append                          # request to append sent station
+string REMOVE = remove                          # request to remove sent station
+
+---
+
+string                          response        # response string
+
+# response constants
+string EXECUTED = executed                      # response if the request could be executed successful
+string FAILED = failed                          # response if the request could not be executed successful
+string ERROR = error                            # response if the request is unknown

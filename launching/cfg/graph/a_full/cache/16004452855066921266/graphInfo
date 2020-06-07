@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<!DOCTYPE boost_serialization>
+<boost_serialization signature="serialization::archive" version="12">
+<GraphInfo class_id="0" tracking_level="0" version="0">
+	<Origin class_id="1" tracking_level="0" version="0">
+		<x>1.503950043e+02</x>
+		<y>1.126154053e+03</y>
+	</Origin>
+	<Resolution>1.999999955e-02</Resolution>
+	<SegmentLength>161</SegmentLength>
+</GraphInfo>

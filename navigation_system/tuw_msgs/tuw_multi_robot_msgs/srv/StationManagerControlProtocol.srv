@@ -1,0 +1,23 @@
+#################################################################
+## Protocol to Send and Receive Station Management Commands
+#################################################################
+
+string      request         # request
+string      addition        # addition, holds information to the request
+
+# request constants
+string LOAD = load          # command to load a file (addition is the file path)
+string SAVE = save          # command to save a file (addition is the file path)
+string UPDATE = update      # command to define update policy
+
+string ONCE = once          # addition to publish data once on request
+string CHANGE = change      # addition to publish data on ever change
+
+---
+
+string      response        # response string
+
+# response constants
+string EXECUTED = executed  # response if the request could be executed successful
+string FAILED = failed      # response if the request could not be executed successful
+string ERROR = error        # response if the request is unknown
